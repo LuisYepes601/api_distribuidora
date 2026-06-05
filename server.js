@@ -72,6 +72,25 @@ app.get('/api/clientes/:id', async (req, res) => {
     }
 });
 
+app.get('/api/clientes/search', async (req, res) => {
+    const { q } = req.query;
+    if (!q) return res.status(400).json({ error: 'Query "q" es requerido' });   
+    try {
+        const regex = new RegExp(q, 'i');
+        const clientes = await Cliente.find({
+            $or: [
+                { name: regex },
+                { email: regex },
+                { phone: regex },
+                { company: regex }
+            ]
+        }).lean();
+        res.json(clientes);
+    } catch (err) {
+        res.status(500).json({ error: 'Error al buscar clientes' });
+    }
+});
+
 app.post('/api/clientes', async (req, res) => {
     try {
         const { name, email, phone, company, address,
@@ -112,6 +131,7 @@ app.delete('/api/clientes/:id', async (req, res) => {
     }
 });
 
+
 app.delete('/api/clientes', async (req, res) => {
     try {
         await Cliente.deleteMany({});
@@ -130,3 +150,25 @@ process.on('SIGINT', async () => {
     } catch (e) { }
     process.exit(0);
 });
+
+app.post('login', (req, res) => {
+    const { username, password } = req.body;
+    if (username === 'admin' && password === 'password') {
+        res.json({ token: 'fake-jwt-token' });
+    } else {
+        res.status(401).json({ error: 'Credenciales inválidas' });
+    }                   
+
+});
+
+
+app.post('register', (req, res) => {
+    const { username, password } = req.body;    
+    if (username && password) {
+        res.json({ message: 'Usuario registrado' });
+    } else {
+        res.status(400).json({ error: 'Username y password son requeridos' });
+    }                                               
+});
+
+
