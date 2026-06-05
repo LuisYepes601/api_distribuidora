@@ -223,4 +223,22 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
+app.delete('/api/users', async (req, res) => {
+    try {
+        await User.deleteMany({});  
+        res.json({ message: 'Todos los usuarios eliminados' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al eliminar usuarios' });
+    }
+});
+
+app.delete('api/users/:id', async (req, res) => {
+    const { id } = req.params;          
+    try {        const deleted = await User.findByIdAndDelete(id);       
+        if (!deleted) return res.status(404).json({ error: 'No encontrado' });
+        res.json({ message: 'Usuario eliminado' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al eliminar usuario' });
+    }                   
+});
 
