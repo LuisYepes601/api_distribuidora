@@ -112,7 +112,16 @@ app.delete('/api/clientes/:id', async (req, res) => {
     }
 });
 
- 
+app.delete('/api/clientes', async (req, res) => {
+    try {
+        await Cliente.deleteMany({});
+        res.json({ message: 'Todos los clientes eliminados' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al eliminar clientes' });
+    }
+});
+
+
 // Graceful shutdown
 process.on('SIGINT', async () => {
     console.log('\nCerrando servidor...');
