@@ -50,6 +50,14 @@ const clienteSchema = new mongoose.Schema({
 
 const Cliente = mongoose.model('Cliente', clienteSchema);
 
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    email: { type: String, required: true, unique: true }
+}, { timestamps: true });
+
+const User = mongoose.model('User', userSchema);
+
 // Endpoints
 app.get('/api/clientes', async (req, res) => {
     try {
@@ -74,7 +82,7 @@ app.get('/api/clientes/:id', async (req, res) => {
 
 app.get('/api/clientes/search', async (req, res) => {
     const { q } = req.query;
-    if (!q) return res.status(400).json({ error: 'Query "q" es requerido' });   
+    if (!q) return res.status(400).json({ error: 'Query "q" es requerido' });
     try {
         const regex = new RegExp(q, 'i');
         const clientes = await Cliente.find({
@@ -151,24 +159,68 @@ process.on('SIGINT', async () => {
     process.exit(0);
 });
 
-app.post('login', (req, res) => {
+app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
-    if (username === 'admin' && password === 'password') {
-        res.json({ token: 'fake-jwt-token' });
-    } else {
-        res.status(401).json({ error: 'Credenciales inválidas' });
-    }                   
-
+    if (!username || !password) {
+        return res.status(400).json({ error: 'Username y password son requeridos' });
+    }
+    User.findOne({ username, password }).lean().then(user => {
+        if (!user) {
+            return res.status(401).json({ error: 'Credenciales inválidas' });
+        }
+        res.json({ message: 'Login exitoso' });
+    }).catch(err => {
+        res.status(500).json({ error: 'Error al procesar login' });
+    });
 });
 
+    app.post('/api/register', async (req, res) => {
+        const { username, password, email } = req.body;
+        if (!username || !password || !email) {
+            return res.status(400).json({ error: 'Username, password y email son requeridos' });
+        }
+        try {
+            const newUser = new User({ username, password, email });
+            await newUser.save();
+            res.status(201).json({ message: 'Usuario registrado' });
+        }
+        catch (err) {
+            if (err.code === 11000) {
+                return res.status(409).json({ error: 'Username o email ya existe' });
+            }
+            res.status(500).json({ error: 'Error al registrar usuario' });
+        }
+    });
 
-app.post('register', (req, res) => {
-    const { username, password } = req.body;    
-    if (username && password) {
-        res.json({ message: 'Usuario registrado' });
-    } else {
-        res.status(400).json({ error: 'Username y password son requeridos' });
-    }                                               
+ app.put('/api/users/:id', async (req, res) => {        
+    const { id } = req.params;
+    try {
+        const updated = await User.findByIdAndUpdate(id, req.body, { new: true });
+        if (!updated) return res.status(404).json({ error: 'No encontrado' });
+        res.json(updated);
+    } catch (err) {
+        res.status(500).json({ error: 'Error al actualizar usuario' });
+    }       
+});
+
+app.delete('/api/users/:id', async (req, res) => {                                          
+    const { id } = req.params;
+    try {
+        const deleted = await User.findByIdAndDelete(id);       
+        if (!deleted) return res.status(404).json({ error: 'No encontrado' });
+        res.json({ message: 'Usuario eliminado' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al eliminar usuario' });
+    }   
+});
+
+app.get('/api/users', async (req, res) => {
+    try {
+        const users = await User.find().lean();
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: 'Error al obtener usuarios' });
+    }
 });
 
 
