@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: API Distribuidora
+  version: '1.0.0'
+  description: API para gestionar clientes (clientes de garrafones). Endpoints para listar, crear, actualizar y eliminar clientes.
+servers:
+  - url: http://localhost:3000
+    description: Servidor local
+paths:
+  /api/clientes:
+    get:
+      summary: Listar clientes
+      description: Devuelve la lista de clientes.
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+        '500':
+          description: Error del servidor
+    post:
+      summary: Crear cliente
+      description: Crea un nuevo cliente. Campos `name`, `email` y `phone` son obligatorios.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteInput'
+      responses:
+        '201':
+          description: Cliente creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '400':
+          description: Petición inválida (faltan campos)
+        '500':
+          description: Error del servidor
+  /api/clientes/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: Identificador UUID público del cliente
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Actualizar cliente
+      description: Actualiza un cliente por su `id`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteInput'
+      responses:
+        '200':
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '404':
+          description: Cliente no encontrado
+        '500':
+          description: Error del servidor
+    delete:
+      summary: Eliminar cliente
+      description: Elimina un cliente por su `id`.
+      responses:
+        '200':
+          description: Cliente eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Eliminado
+        '404':
+          description: Cliente no encontrado
+        '500':
+          description: Error del servidor
+components:
+  schemas:
+    Cliente:
+      type: object
+      properties:
+        id:
+          type: string
+          description: UUID público
+          example: "c56a4180-65aa-42ec-a945-5fd21dec0538"
+        name:
+          type: string
+          example: "Juan Pérez"
+        email:
+          type: string
+          format: email
+          example: "juan@ejemplo.com"
+        phone:
+          type: string
+          example: "12345678"
+        company:
+          type: string
+          example: "Tienda Central"
+        address:
+          type: string
+          example: "Calle Falsa 123"
+        notes:
+          type: string
+          example: "Entrega por la mañana"
+        productType:
+          type: string
+          example: "Garrafón"
+        expectedQuantity:
+          type: integer
+          example: 5
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - phone
+    ClienteInput:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "María López"
+        email:
+          type: string
+          format: email
+          example: "maria@ejemplo.com"
+        phone:
+          type: string
+          example: "87654321"
+        company:
+          type: string
+          example: "Sucursal Norte"
+        address:
+          type: string
+          example: "Av. Siempre Viva 742"
+        notes:
+          type: string
+          example: "Prefiere horario de tarde"
+        productType:
+          type: string
+          example: "Garrafón"
+        expectedQuantity:
+          type: integer
+          example: 3
+      required:
+        - name
+        - email
+        - phone

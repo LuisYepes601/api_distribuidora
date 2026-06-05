@@ -10,6 +10,17 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Swagger UI
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+let swaggerDocument;
+try {
+    swaggerDocument = YAML.load('./openapi.yaml');
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+} catch (e) {
+    console.warn('No se pudo cargar openapi.yaml para Swagger UI:', e.message || e);
+}
+
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/distribuidora';
 
 mongoose.connect(MONGODB_URI, {
@@ -17,23 +28,24 @@ mongoose.connect(MONGODB_URI, {
     useUnifiedTopology: true
 }).then(() => {
     console.log('Conectado a MongoDB');
-    // Start server only after successful DB connection
-    const server = app.listen(PORT, () => {
-        console.log(`Servidor corriendo en: http://localhost:${PORT}`);
-    });
-
-    server.on('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-            console.error(`Puerto ${PORT} en uso. Cierra el proceso que lo usa o cambia PORT.`);
-            process.exit(1);
-        } else {
-            console.error('Error en el servidor:', err);
-        }
-    });
-
 }).catch(err => {
     console.error('Error conectando a MongoDB:', err.message || err);
-    process.exit(1);
+    // No hacemos exit para permitir que la UI de Swagger esté disponible mientras depuras
+});
+
+// Iniciar servidor inmediatamente para que /api-docs esté disponible incluso si DB falla
+const server = app.listen(PORT, () => {
+    console.log(`Servidor corriendo en: http://localhost:${PORT}`);
+    if (swaggerDocument) console.log(`Docs en: http://localhost:${PORT}/api-docs`);
+});
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Puerto ${PORT} en uso. Cierra el proceso que lo usa o cambia PORT.`);
+        process.exit(1);
+    } else {
+        console.error('Error en el servidor:', err);
+    }
 });
 
 const clienteSchema = new mongoose.Schema({
