@@ -74,6 +74,10 @@ const User = mongoose.model('User', userSchema);
 app.get('/api/clientes', async (req, res) => {
     try {
         const clientes = await Cliente.find().lean();
+
+        if(clientes.length === 0) {
+            return res.status(404).json({ error: 'No hay clientes registrados, por favor registre un cliente.' });
+        }
         res.json(clientes);
     } catch (err) {
         res.status(500).json({ error: 'Error al obtener clientes' });
