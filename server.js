@@ -242,3 +242,14 @@ app.delete('api/users/:id', async (req, res) => {
     }                   
 });
 
+app.get('/api/users/:id', async (req, res) => {
+    const { id } = req.params;      
+    try {
+        const user = await User.findById(id).lean();        
+        if (!user) return res.status(404).json({ error: 'No encontrado' });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: 'Error al obtener usuario' });
+    }   
+});
+
