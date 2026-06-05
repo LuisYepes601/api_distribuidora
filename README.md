@@ -55,5 +55,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 Luego abrir `http://localhost:3000/api-docs` para ver la UI de Swagger.
 
-Si quieres que lo monte yo automáticamente, dime y lo agrego al `server.js` y `package.json`.
+ Si quieres que lo monte yo automáticamente, dime y lo agrego al `server.js` y `package.json`.
+
+Endpoints de Usuarios (documentados en `openapi.yaml`)
+
+- `POST /api/users` — registrar usuario (body: `name`, `email`, `password`)
+- `POST /api/users/login` — autenticación (body: `email`, `password`), devuelve `token` si implementas auth
+- `GET /api/users/:id` — obtener usuario por id (info pública)
+
+Nota: la spec incluye ejemplos y esquemas `User`, `UserInput`, `LoginInput` y `AuthResponse`. Actualmente el servidor no implementa autenticación — esto es solo documentación. Si quieres que implemente registro/login con JWT, puedo hacerlo.
 # api_distribuidora
