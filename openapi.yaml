@@ -2,15 +2,23 @@ openapi: 3.0.3
 info:
   title: API Distribuidora
   version: '1.0.0'
-  description: API para gestionar clientes (clientes de garrafones). Endpoints para listar, crear, actualizar y eliminar clientes.
+  description: |
+    API para gestionar clientes (garrafones) y usuarios. Endpoints para listar, crear,
+    actualizar y eliminar clientes; documentación de endpoints de usuarios (registro/login/get).
 servers:
   - url: http://localhost:3000
     description: Servidor local
+  - url: https://{host}
+    description: Producción (ej. Render)
+    variables:
+      host:
+        default: example.onrender.com
 paths:
   /api/clientes:
     get:
+      tags: [Clientes]
       summary: Listar clientes
-      description: Devuelve la lista de clientes.
+      description: Devuelve la lista completa de clientes registrados.
       responses:
         '200':
           description: Lista de clientes
@@ -20,9 +28,19 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Cliente'
+              examples:
+                sample:
+                  value:
+                    - id: "c56a4180-65aa-42ec-a945-5fd21dec0538"
+                      name: "Juan Pérez"
+                      email: "juan@ejemplo.com"
+                      phone: "12345678"
+                      productType: "Garrafón"
+                      expectedQuantity: 5
         '500':
-          description: Error del servidor
+          $ref: '#/components/responses/InternalError'
     post:
+      tags: [Clientes]
       summary: Crear cliente
       description: Crea un nuevo cliente. Campos `name`, `email` y `phone` son obligatorios.
       requestBody:
@@ -31,6 +49,14 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ClienteInput'
+            examples:
+              nuevoCliente:
+                value:
+                  name: "María López"
+                  email: "maria@ejemplo.com"
+                  phone: "87654321"
+                  productType: "Garrafón"
+                  expectedQuantity: 3
       responses:
         '201':
           description: Cliente creado
@@ -39,9 +65,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Cliente'
         '400':
-          description: Petición inválida (faltan campos)
+          $ref: '#/components/responses/BadRequest'
         '500':
-          description: Error del servidor
+          $ref: '#/components/responses/InternalError'
+
   /api/clientes/{id}:
     parameters:
       - name: id
@@ -51,8 +78,9 @@ paths:
         schema:
           type: string
     put:
+      tags: [Clientes]
       summary: Actualizar cliente
-      description: Actualiza un cliente por su `id`.
+      description: Actualiza un cliente por su `id`. Envía únicamente los campos a modificar.
       requestBody:
         required: true
         content:
@@ -67,10 +95,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Cliente'
         '404':
-          description: Cliente no encontrado
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Error del servidor
+          $ref: '#/components/responses/InternalError'
     delete:
+      tags: [Clientes]
       summary: Eliminar cliente
       description: Elimina un cliente por su `id`.
       responses:
@@ -85,11 +114,120 @@ paths:
                     type: string
                     example: Eliminado
         '404':
-          description: Cliente no encontrado
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Error del servidor
+          $ref: '#/components/responses/InternalError'
+
+  /api/users:
+    post:
+      tags: [Usuarios]
+      summary: Registrar nuevo usuario
+      description: Crea un usuario. La implementación actual solo define la doc; si se implementa, la contraseña debe ser hasheada.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+            examples:
+              nuevoUsuario:
+                value:
+                  name: "Admin"
+                  email: "admin@ejemplo.com"
+                  password: "secret123"
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/users/login:
+    post:
+      tags: [Usuarios]
+      summary: Login de usuario
+      description: Autentica usuario y devuelve token (documentado; implementación opcional).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+            examples:
+              login:
+                value:
+                  email: "admin@ejemplo.com"
+                  password: "secret123"
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: Identificador público del usuario
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Usuarios]
+      summary: Obtener usuario por id
+      description: Devuelve información pública del usuario (no incluye password).
+      responses:
+        '200':
+          description: Usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
+  responses:
+    BadRequest:
+      description: Petición inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: No autenticado / credenciales inválidas
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
   schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Descripción del error"
+
     Cliente:
       type: object
       properties:
@@ -133,6 +271,7 @@ components:
         - name
         - email
         - phone
+
     ClienteInput:
       type: object
       properties:
@@ -166,70 +305,6 @@ components:
         - email
         - phone
 
-  # Endpoints para usuarios (autenticación / gestión de usuarios)
-  /api/users:
-    post:
-      summary: Registrar nuevo usuario
-      description: Crea un usuario. Si implementas autenticación, guarda contraseña hasheada.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserInput'
-      responses:
-        '201':
-          description: Usuario creado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          description: Petición inválida
-
-  /api/users/login:
-    post:
-      summary: Login de usuario
-      description: Autentica usuario y devuelve token (si está implementado).
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginInput'
-      responses:
-        '200':
-          description: Autenticación exitosa
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
-          description: Credenciales inválidas
-
-  /api/users/{id}:
-    parameters:
-      - name: id
-        in: path
-        description: Identificador público del usuario
-        required: true
-        schema:
-          type: string
-    get:
-      summary: Obtener usuario por id
-      description: Devuelve información pública del usuario (no incluye password).
-      responses:
-        '200':
-          description: Usuario
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          description: Usuario no encontrado
-
-components:
-  schemas:
     User:
       type: object
       properties:
